@@ -24,7 +24,7 @@ const CreateForm: React.FC = () => {
 
     try {
       // Create the one-time message
-      const res = await axios.post(`${apiBaseUrl}/api/create`, {
+  const res = await axios.post(`${apiBaseUrl}/api/v1/create`, {
         message,
         password: password || undefined,
         expire_minutes: expireMinutes,
@@ -49,7 +49,7 @@ const CreateForm: React.FC = () => {
   };
 
   return (
-    <div className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow-xl flex flex-col gap-6 max-w-md mx-auto w-full">
+  <div className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow-xl flex flex-col gap-6 max-w-md mx-auto w-full" role="form" aria-labelledby="create-message-title">
       {/* Language and Theme Toggles */}
       <div className="flex justify-end -mt-4 -mr-4"> {/* Negative margin to pull them closer to the edge */}
         <div className="flex space-x-2">
@@ -58,7 +58,7 @@ const CreateForm: React.FC = () => {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+  <form onSubmit={handleSubmit} className="flex flex-col gap-4" aria-label="Create one-time message">
         {loading && (
           <div className="flex justify-center items-center py-2">
             <svg className="animate-spin h-6 w-6 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -68,33 +68,43 @@ const CreateForm: React.FC = () => {
             <span className="ml-2">{t("loading")}</span>
           </div>
         )}
+        <label htmlFor="message" id="create-message-title" className="sr-only">{t("enterMessage")}</label>
         <textarea
+          id="message"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder={t("enterMessage")}
           className="border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md p-3 focus:ring-cancomRed focus:border-cancomRed outline-none transition-colors duration-200 resize-y min-h-[100px]"
           required
+          aria-required="true"
+          aria-label={t("enterMessage")}
         />
 
+        <label htmlFor="password" className="sr-only">{t("optionalPassword")}</label>
         <input
+          id="password"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder={t("optionalPassword")}
           className="border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md p-3 focus:ring-cancomRed focus:border-cancomRed outline-none transition-colors duration-200"
+          aria-label={t("optionalPassword")}
         />
 
+        <label htmlFor="expireMinutes" className="sr-only">{t("expirationTime")}</label>
         <select
+          id="expireMinutes"
           value={expireMinutes}
           onChange={(e) => setExpireMinutes(parseInt(e.target.value))}
           className="border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md p-3 focus:ring-cancomRed focus:border-cancomRed outline-none transition-colors duration-200"
+          aria-label={t("expirationTime")}
         >
           <option value={15}>15 {t("minutes")}</option>
           <option value={60}>1 {t("hour")}</option>
           <option value={1440}>24 {t("hours")}</option>
         </select>
 
-        <button type="submit" className="bg-gray-100 hover:bg-gray-200 text-gray-900 py-3 px-4 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-cancomRed focus:ring-offset-2 dark:focus:ring-offset-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100">
+        <button type="submit" className="bg-gray-100 hover:bg-gray-200 text-gray-900 py-3 px-4 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-cancomRed focus:ring-offset-2 dark:focus:ring-offset-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100" aria-label={t("createLink")}>
           {t("createLink")}
         </button>
       </form>

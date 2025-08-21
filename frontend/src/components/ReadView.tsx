@@ -22,7 +22,7 @@ const ReadView: React.FC = () => {
   useEffect(() => {
     const fetchMessage = async () => {
       try {
-        const res = await axios.post(`${apiBaseUrl}/api/read/${token}`, {
+  const res = await axios.post(`${apiBaseUrl}/api/v1/read/${token}`, {
           password: "", // try without password first
         });
         // Instead of directly setting message, show confirmation
@@ -59,7 +59,7 @@ const ReadView: React.FC = () => {
     setIsLoading(true); // Set loading true on password submission
 
     try {
-      const res = await axios.post(`${apiBaseUrl}/api/read/${token}`, {
+  const res = await axios.post(`${apiBaseUrl}/api/v1/read/${token}`, {
         password,
       });
       // Instead of directly setting message, show confirmation

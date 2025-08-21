@@ -40,7 +40,7 @@ class CreateMessageRequest(BaseModel):
 class ReadMessageRequest(BaseModel):
     password: Optional[str] = None
 
-@app.post("/api/create")
+@app.post("/api/v1/create")
 @limiter.limit("5/minute")  # Limit to 5 requests per minute per IP
 def create_message(req: CreateMessageRequest, request: Request):
     token = str(uuid.uuid4())
@@ -57,7 +57,7 @@ def create_message(req: CreateMessageRequest, request: Request):
 
     return {"token": token, "expire_at": messages[token]["expire_at"]}
 
-@app.post("/api/read/{token}")
+@app.post("/api/v1/read/{token}")
 @limiter.limit("10/minute")  # Limit to 10 requests per minute per IP
 def read_message(token: str, req: ReadMessageRequest, request: Request):
     if token not in messages:
