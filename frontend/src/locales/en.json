@@ -1,0 +1,21 @@
+{
+  "enterMessage": "Enter your secret message",
+  "optionalPassword": "Optional password",
+  "expireTime": "Expiration time",
+  "createLink": "Create One-Time Link",
+  "shareLink": "Share this link (will expire after 1 view):",
+  "copy": "Copy",
+  "failedCreate": "Failed to create one-time link",
+  "oneTimeMessage": "One-Time Message:",
+  "invalidLink": "This link is invalid or has already been used.",
+  "passwordRequired": "Password is required for this message.",
+  "enterPassword": "Enter password",
+  "submit": "Submit",
+  "unexpectedError": "An unexpected error occurred.",
+  "minutes": "minutes",
+  "messageNotFoundOrAlreadyRead": "Message not found or already read.",
+  "messageExpired": "Message expired.",
+  "oneTimeMessageConfirmation": "This is a one-time message. Do you want to reveal it?",
+  "revealMessage": "Reveal Message",
+  "loadingMessage": "Loading message..."
+}

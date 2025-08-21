@@ -1,0 +1,21 @@
+{
+  "enterMessage": "Geben Sie Ihre geheime Nachricht ein",
+  "optionalPassword": "Optionales Passwort",
+  "expireTime": "Ablaufzeit",
+  "createLink": "Einmal-Link erstellen",
+  "shareLink": "Diesen Link teilen (endet nach einmaliger Nutzung):",
+  "copy": "Kopieren",
+  "failedCreate": "Erstellen des Einmal-Links fehlgeschlagen",
+  "oneTimeMessage": "Einmal-Nachricht:",
+  "invalidLink": "Dieser Link ist ungültig oder wurde bereits verwendet.",
+  "passwordRequired": "Für diese Nachricht wird ein Passwort benötigt.",
+  "enterPassword": "Passwort eingeben",
+  "submit": "Senden",
+  "unexpectedError": "Ein unerwarteter Fehler ist aufgetreten.",
+  "minutes": "Minuten",
+  "messageNotFoundOrAlreadyRead": "Nachricht nicht gefunden oder bereits gelesen.",
+  "messageExpired": "Nachricht abgelaufen.",
+  "oneTimeMessageConfirmation": "Dies ist eine einmalige Nachricht. Möchten Sie sie enthüllen?",
+  "revealMessage": "Nachricht enthüllen",
+  "loadingMessage": "Nachricht wird geladen..."
+}

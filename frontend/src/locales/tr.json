@@ -1,0 +1,21 @@
+{
+  "enterMessage": "Gizli mesajınızı girin",
+  "optionalPassword": "Opsiyonel şifre",
+  "expireTime": "Son kullanım süresi",
+  "createLink": "Tek Kullanımlık Bağlantı Oluştur",
+  "shareLink": "Bu bağlantıyı paylaşın (1 kullanımda sona erecek):",
+  "copy": "Kopyala",
+  "failedCreate": "Tek kullanımlık bağlantı oluşturulamadı",
+  "oneTimeMessage": "Tek Kullanımlık Mesaj:",
+  "invalidLink": "Bu bağlantı geçersiz veya zaten kullanılmış.",
+  "passwordRequired": "Bu mesaj için şifre gereklidir.",
+  "enterPassword": "Şifreyi girin",
+  "submit": "Gönder",
+  "unexpectedError": "Beklenmeyen bir hata oluştu.",
+  "minutes": "dakika",
+  "messageNotFoundOrAlreadyRead": "Mesaj bulunamadı veya zaten okundu.",
+  "messageExpired": "Mesajın süresi doldu.",
+  "oneTimeMessageConfirmation": "Bu tek kullanımlık bir mesajdır. Ortaya çıkarmak ister misiniz?",
+  "revealMessage": "Mesajı Ortaya Çıkar",
+  "loadingMessage": "Mesaj yükleniyor..."
+}
