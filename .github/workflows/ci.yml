@@ -1,4 +1,6 @@
 name: CI
+permissions:
+  contents: write
 
 on:
   push:
@@ -22,6 +24,11 @@ jobs:
           --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - uses: actions/checkout@v3
+      - name: Set up git credentials for pushing tags
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
