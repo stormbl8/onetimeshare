@@ -29,24 +29,37 @@ jobs:
       - name: Install backend dependencies
         run: |
           cd backend
-      - name: Check for major or minor version change and tag
-        id: version_tag
+      - name: Check for backend and frontend version changes and tag
+        id: service_version_tag
         run: |
           set -e
-          if [ ! -f VERSION ]; then echo "VERSION file not found"; exit 1; fi
-          MAJOR=$(cut -d'.' -f1 VERSION)
-          MINOR=$(cut -d'.' -f2 VERSION)
-          PREV_MAJOR=$(git show HEAD^:VERSION 2>/dev/null | cut -d'.' -f1 || echo "")
-          PREV_MINOR=$(git show HEAD^:VERSION 2>/dev/null | cut -d'.' -f2 || echo "")
-          if [ "$MAJOR" != "$PREV_MAJOR" ] || [ "$MINOR" != "$PREV_MINOR" ]; then
-            TAG="v$MAJOR.$MINOR.0"
-            echo "Major or minor version changed: $PREV_MAJOR.$PREV_MINOR -> $MAJOR.$MINOR. Creating tag $TAG."
+          if [ ! -f .env-local.sh ]; then echo ".env-local.sh file not found"; exit 1; fi
+          source .env-local.sh
+          # Backend version check
+          CUR_BACKEND_VER=$(grep '^backend-service=' .env-local.sh | cut -d'=' -f2)
+          PREV_BACKEND_VER=$(git show HEAD^:.env-local.sh 2>/dev/null | grep '^backend-service=' | cut -d'=' -f2 || echo "")
+          if [ "$CUR_BACKEND_VER" != "$PREV_BACKEND_VER" ]; then
+            TAG="backend-$CUR_BACKEND_VER"
+            echo "Backend version changed: $PREV_BACKEND_VER -> $CUR_BACKEND_VER. Creating tag $TAG."
             git config user.name "github-actions"
             git config user.email "github-actions@github.com"
             git tag $TAG
             git push origin $TAG
           else
-            echo "No major or minor version change detected."
+            echo "No backend version change detected."
+          fi
+          # Frontend version check
+          CUR_FRONTEND_VER=$(grep '^frontend-service=' .env-local.sh | cut -d'=' -f2)
+          PREV_FRONTEND_VER=$(git show HEAD^:.env-local.sh 2>/dev/null | grep '^frontend-service=' | cut -d'=' -f2 || echo "")
+          if [ "$CUR_FRONTEND_VER" != "$PREV_FRONTEND_VER" ]; then
+            TAG="frontend-$CUR_FRONTEND_VER"
+            echo "Frontend version changed: $PREV_FRONTEND_VER -> $CUR_FRONTEND_VER. Creating tag $TAG."
+            git config user.name "github-actions"
+            git config user.email "github-actions@github.com"
+            git tag $TAG
+            git push origin $TAG
+          else
+            echo "No frontend version change detected."
           fi
           pip install -r requirements.txt
       - name: Run backend tests
