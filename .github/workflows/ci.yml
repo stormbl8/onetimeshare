@@ -29,6 +29,25 @@ jobs:
       - name: Install backend dependencies
         run: |
           cd backend
+      - name: Check for major or minor version change and tag
+        id: version_tag
+        run: |
+          set -e
+          if [ ! -f VERSION ]; then echo "VERSION file not found"; exit 1; fi
+          MAJOR=$(cut -d'.' -f1 VERSION)
+          MINOR=$(cut -d'.' -f2 VERSION)
+          PREV_MAJOR=$(git show HEAD^:VERSION 2>/dev/null | cut -d'.' -f1 || echo "")
+          PREV_MINOR=$(git show HEAD^:VERSION 2>/dev/null | cut -d'.' -f2 || echo "")
+          if [ "$MAJOR" != "$PREV_MAJOR" ] || [ "$MINOR" != "$PREV_MINOR" ]; then
+            TAG="v$MAJOR.$MINOR.0"
+            echo "Major or minor version changed: $PREV_MAJOR.$PREV_MINOR -> $MAJOR.$MINOR. Creating tag $TAG."
+            git config user.name "github-actions"
+            git config user.email "github-actions@github.com"
+            git tag $TAG
+            git push origin $TAG
+          else
+            echo "No major or minor version change detected."
+          fi
           pip install -r requirements.txt
       - name: Run backend tests
         run: |
@@ -49,3 +68,13 @@ jobs:
       - name: Build Docker images
         run: |
           docker-compose build
+      - name: Log in to GitHub Container Registry
+        run: echo ${{ secrets.CR_PAT }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Tag backend image
+        run: docker tag onetimeshare_backend ghcr.io/stormbl8/onetimeshare-backend:latest
+      - name: Tag frontend image
+        run: docker tag onetimeshare_frontend ghcr.io/stormbl8/onetimeshare-frontend:latest
+      - name: Push backend image
+        run: docker push ghcr.io/stormbl8/onetimeshare-backend:latest
+      - name: Push frontend image
+        run: docker push ghcr.io/stormbl8/onetimeshare-frontend:latest
