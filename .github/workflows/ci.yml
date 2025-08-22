@@ -36,6 +36,7 @@ jobs:
       - name: Install backend dependencies
         run: |
           cd backend
+          pip install -r requirements.txt
       - name: Check for backend and frontend version changes and tag
         id: service_version_tag
         run: |
@@ -67,7 +68,6 @@ jobs:
           else
             echo "No frontend version change detected."
           fi
-          pip install -r requirements.txt
       - name: Run backend tests
         run: |
           cd backend
