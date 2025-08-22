@@ -33,11 +33,10 @@ jobs:
         id: service_version_tag
         run: |
           set -e
-          if [ ! -f .env-local.sh ]; then echo ".env-local.sh file not found"; exit 1; fi
-          source .env-local.sh
+          if [ ! -f .env ]; then echo ".env file not found"; exit 1; fi
           # Backend version check
-          CUR_BACKEND_VER=$(grep '^backend-service=' .env-local.sh | cut -d'=' -f2)
-          PREV_BACKEND_VER=$(git show HEAD^:.env-local.sh 2>/dev/null | grep '^backend-service=' | cut -d'=' -f2 || echo "")
+          CUR_BACKEND_VER=$(grep '^backend_service=' .env | cut -d'=' -f2)
+          PREV_BACKEND_VER=$(git show HEAD^:.env 2>/dev/null | grep '^backend_service=' | cut -d'=' -f2 || echo "")
           if [ "$CUR_BACKEND_VER" != "$PREV_BACKEND_VER" ]; then
             TAG="backend-$CUR_BACKEND_VER"
             echo "Backend version changed: $PREV_BACKEND_VER -> $CUR_BACKEND_VER. Creating tag $TAG."
@@ -49,8 +48,8 @@ jobs:
             echo "No backend version change detected."
           fi
           # Frontend version check
-          CUR_FRONTEND_VER=$(grep '^frontend-service=' .env-local.sh | cut -d'=' -f2)
-          PREV_FRONTEND_VER=$(git show HEAD^:.env-local.sh 2>/dev/null | grep '^frontend-service=' | cut -d'=' -f2 || echo "")
+          CUR_FRONTEND_VER=$(grep '^frontend_service=' .env | cut -d'=' -f2)
+          PREV_FRONTEND_VER=$(git show HEAD^:.env 2>/dev/null | grep '^frontend_service=' | cut -d'=' -f2 || echo "")
           if [ "$CUR_FRONTEND_VER" != "$PREV_FRONTEND_VER" ]; then
             TAG="frontend-$CUR_FRONTEND_VER"
             echo "Frontend version changed: $PREV_FRONTEND_VER -> $CUR_FRONTEND_VER. Creating tag $TAG."
