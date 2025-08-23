@@ -34,7 +34,7 @@ OneTimeShare is a secure, open-source web app for sharing sensitive messages via
 
 2. **Build and run with Docker Compose:**
    ```sh
-   docker-compose up --build
+   docker-compose -f docker-compose-dev.yml up --build
    ```
 
 3. **Access the app:**

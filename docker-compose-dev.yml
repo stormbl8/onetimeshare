@@ -1,5 +1,6 @@
 services:
   frontend:
+    image: onetimeshare_frontend:latest
     build: ./frontend
     ports:
       - "8080:80"
@@ -15,6 +16,7 @@ services:
     # #   - VITE_PUBLIC_HOST=http://otp.ozfe-digital.de:8080
 
   backend:
+    image: onetimeshare_backend:latest
     build: ./backend
     ports:
       - "8000:8000"
