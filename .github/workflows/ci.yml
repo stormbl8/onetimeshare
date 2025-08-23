@@ -92,15 +92,26 @@ jobs:
           sudo chmod +x /usr/local/bin/docker-compose
           docker-compose version
       - name: Build Docker images
-        run: |
-          docker-compose build
+        run: docker-compose -f docker-compose-dev.yml build
       - name: Log in to GitHub Container Registry
         run: echo ${{ secrets.CR_PAT }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Tag backend image
-        run: docker tag onetimeshare_backend ghcr.io/${{ github.repository_owner }}/onetimeshare-backend:latest
-      - name: Tag frontend image
-        run: docker tag onetimeshare_frontend ghcr.io/${{ github.repository_owner }}/onetimeshare-frontend:latest
-      - name: Push backend image
-        run: docker push ghcr.io/${{ github.repository_owner }}/onetimeshare-backend:latest
-      - name: Push frontend image
-        run: docker push ghcr.io/${{ github.repository_owner }}/onetimeshare-frontend:latest
+      - name: Tag and Push backend image
+        run: |
+          BACKEND_SERVICE_VERSION=$(grep '^backend_service=' .env | cut -d'=' -f2)
+          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/onetimeshare-backend
+          # Tag with version and latest
+          docker tag onetimeshare_backend:latest ${IMAGE_ID}:${BACKEND_SERVICE_VERSION}
+          docker tag onetimeshare_backend:latest ${IMAGE_ID}:latest
+          # Push both tags
+          docker push ${IMAGE_ID}:${BACKEND_SERVICE_VERSION}
+          docker push ${IMAGE_ID}:latest
+      - name: Tag and Push frontend image
+        run: |
+          FRONTEND_SERVICE_VERSION=$(grep '^frontend_service=' .env | cut -d'=' -f2)
+          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/onetimeshare-frontend
+          # Tag with version and latest
+          docker tag onetimeshare_frontend:latest ${IMAGE_ID}:${FRONTEND_SERVICE_VERSION}
+          docker tag onetimeshare_frontend:latest ${IMAGE_ID}:latest
+          # Push both tags
+          docker push ${IMAGE_ID}:${FRONTEND_SERVICE_VERSION}
+          docker push ${IMAGE_ID}:latest
