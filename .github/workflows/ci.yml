@@ -47,11 +47,12 @@ jobs:
           PREV_BACKEND_VER=$(git show HEAD^:.env 2>/dev/null | grep '^backend_service=' | cut -d'=' -f2 || echo "")
           if [ "$CUR_BACKEND_VER" != "$PREV_BACKEND_VER" ]; then
             TAG="backend-$CUR_BACKEND_VER"
-            echo "Backend version changed: $PREV_BACKEND_VER -> $CUR_BACKEND_VER. Creating tag $TAG."
-            git config user.name "github-actions"
-            git config user.email "github-actions@github.com"
-            git tag $TAG
-            git push origin $TAG
+            if git ls-remote --tags origin | grep -q "refs/tags/$TAG$"; then
+              echo "Tag $TAG already exists. Skipping creation."
+            else
+              echo "Backend version changed: $PREV_BACKEND_VER -> $CUR_BACKEND_VER. Creating tag $TAG."
+              git tag $TAG && git push origin $TAG
+            fi
           else
             echo "No backend version change detected."
           fi
@@ -60,11 +61,12 @@ jobs:
           PREV_FRONTEND_VER=$(git show HEAD^:.env 2>/dev/null | grep '^frontend_service=' | cut -d'=' -f2 || echo "")
           if [ "$CUR_FRONTEND_VER" != "$PREV_FRONTEND_VER" ]; then
             TAG="frontend-$CUR_FRONTEND_VER"
-            echo "Frontend version changed: $PREV_FRONTEND_VER -> $CUR_FRONTEND_VER. Creating tag $TAG."
-            git config user.name "github-actions"
-            git config user.email "github-actions@github.com"
-            git tag $TAG
-            git push origin $TAG
+            if git ls-remote --tags origin | grep -q "refs/tags/$TAG$"; then
+              echo "Tag $TAG already exists. Skipping creation."
+            else
+              echo "Frontend version changed: $PREV_FRONTEND_VER -> $CUR_FRONTEND_VER. Creating tag $TAG."
+              git tag $TAG && git push origin $TAG
+            fi
           else
             echo "No frontend version change detected."
           fi
