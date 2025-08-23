@@ -82,12 +82,19 @@ jobs:
           docker-compose version
       - name: Build Docker images
         run: docker-compose -f docker-compose-dev.yml build
-      - name: Scan Docker images for vulnerabilities
+      - name: Scan backend image for vulnerabilities
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: |
-            onetimeshare_backend:latest
-            onetimeshare_frontend:latest
+          image-ref: 'onetimeshare_backend:latest'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+      - name: Scan frontend image for vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'onetimeshare_frontend:latest'
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
