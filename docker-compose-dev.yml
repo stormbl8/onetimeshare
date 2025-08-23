@@ -5,25 +5,35 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost"]
       interval: 30s
       timeout: 10s
       retries: 3
-    # environment:
-    #   - VITE_API_BASE_URL=/
-    # #   - VITE_PUBLIC_HOST=http://otp.ozfe-digital.de:8080
 
   backend:
     image: onetimeshare_backend:latest
     build: ./backend
     ports:
-      - "8000:8000"
+      - "8000:8000" # Expose for local dev access to API docs
+    depends_on:
+      redis:
+        condition: service_healthy
     environment:
       - PYTHONUNBUFFERED=1
+      - REDIS_HOST=redis
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

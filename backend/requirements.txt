@@ -4,3 +4,4 @@ pydantic
 bcrypt
 slowapi
 python-multipart
+redis

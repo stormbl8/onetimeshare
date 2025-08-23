@@ -5,7 +5,7 @@ OneTimeShare is a secure, open-source web app for sharing sensitive messages via
 ## Features
 
 - **One-time message sharing:** Messages self-destruct after a single view.
-- **Optional password protection:** Add a password for extra security.
+- **End-to-end encryption:** Messages are encrypted in the browser and can only be decrypted by the recipient with the link. The server never sees the plaintext message.
 - **Expiration time:** Set how long the link remains valid.
 - **Multi-language support:** English, Turkish, and German.
 - **Dark/light theme toggle.**
@@ -14,7 +14,7 @@ OneTimeShare is a secure, open-source web app for sharing sensitive messages via
 ## Tech Stack
 
 - **Frontend:** React, TypeScript, Tailwind CSS, Vite, i18next, react-toastify
-- **Backend:** FastAPI, Python, bcrypt
+- **Backend:** FastAPI, Python, Redis
 - **Containerization:** Docker, Docker Compose
 - **Web server:** Nginx
 

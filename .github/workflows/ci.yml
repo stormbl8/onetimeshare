@@ -11,17 +11,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:13
-        ports:
-          - 5432:5432
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: test
-        options: >-
-          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - uses: actions/checkout@v3
       - name: Set up git credentials for pushing tags
@@ -93,6 +82,17 @@ jobs:
           docker-compose version
       - name: Build Docker images
         run: docker-compose -f docker-compose-dev.yml build
+      - name: Scan Docker images for vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: |
+            onetimeshare_backend:latest
+            onetimeshare_frontend:latest
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
       - name: Log in to GitHub Container Registry
         run: echo ${{ secrets.CR_PAT }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Tag and Push backend image
@@ -115,3 +115,55 @@ jobs:
           # Push both tags
           docker push ${IMAGE_ID}:${FRONTEND_SERVICE_VERSION}
           docker push ${IMAGE_ID}:latest
+  update-changelog:
+    runs-on: ubuntu-latest
+    needs: build # Ensures this job runs only after the build and tests succeed
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master' # Only run on pushes to the master branch
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          # Fetch depth 2 is needed to compare HEAD with the previous commit (HEAD^)
+          fetch-depth: 2
+
+      - name: Configure git for pushing
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+
+      - name: Update CHANGELOG.md based on README features
+        run: |
+          set -e
+          # Only proceed if README.md was actually changed in the last commit.
+          if ! git diff-tree --no-commit-id --name-only -r HEAD | grep -q "README.md"; then
+            echo "README.md not changed in this commit. Skipping changelog update."
+            exit 0
+          fi
+
+          echo "README.md has changed. Checking for feature updates."
+
+          # This function extracts content between '## Features' and the next '##' heading.
+          extract_features() {
+            awk '/^## Features/{f=1;next} /^##/{f=0} f' "$1"
+          }
+
+          extract_features <(git show HEAD:README.md) > current_features.txt
+          extract_features <(git show HEAD^:README.md) > prev_features.txt
+
+          # Find the differences, keeping only lines that are new or changed.
+          CHANGES=$(diff prev_features.txt current_features.txt | grep '^> ' | sed 's/> //')
+
+          if [ -z "$CHANGES" ]; then
+            echo "No new or changed lines in the Features section. Skipping."
+            exit 0
+          fi
+
+          VERSION=$(grep '^backend_service=' .env | cut -d'=' -f2)
+          DATE=$(date +%Y-%m-%d)
+          { echo "## [$VERSION] - $DATE"; echo; echo "### Added or Changed"; echo "$CHANGES"; echo; cat CHANGELOG.md; } > CHANGELOG.md.new
+          mv CHANGELOG.md.new CHANGELOG.md
+
+          git add CHANGELOG.md
+          git commit -m "docs: Update CHANGELOG.md for version $VERSION [skip ci]"
+          git push

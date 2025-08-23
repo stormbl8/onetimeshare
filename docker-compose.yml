@@ -4,24 +4,41 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost"]
       interval: 30s
       timeout: 10s
       retries: 3
-    # environment:
-    #   - VITE_API_BASE_URL=/
-    #   - VITE_PUBLIC_HOST=http://otp.domain.com:8080
-
+    restart: always
+    environment: # VITE_PUBLIC_HOST is still needed to generate the correct shareable link
+      - VITE_PUBLIC_HOST=http://otp.ozfe-digital.de:8080
   backend:
     image: ghcr.io/volkanoezdemir/onetimeshare-backend:${backend-service}
-    ports:
-      - "8000:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
     environment:
       - PYTHONUNBUFFERED=1
+      - REDIS_HOST=redis
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+volumes:
+  redis_data:

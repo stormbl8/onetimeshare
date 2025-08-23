@@ -4,17 +4,19 @@ import QRCode from "qrcode.react";
 import { apiBaseUrl, publicHost } from "../App";
 import { useTranslation } from "react-i18next";
 import { showToast } from "../utils/toast";
+import { encryptMessage } from "../utils/crypto";
+import { useClipboard } from "../hooks/useClipboard";
 import LanguageSelector from "./LanguageSelector"; // Import LanguageSelector
 import ThemeToggle from "./ThemeToggle"; // Import ThemeToggle
 
 const CreateForm: React.FC = () => {
   const { t } = useTranslation();
   const [message, setMessage] = useState("");
-  const [password, setPassword] = useState("");
   const [expireMinutes, setExpireMinutes] = useState(60);
   const [link, setLink] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const { isCopied, copy } = useClipboard();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,26 +25,33 @@ const CreateForm: React.FC = () => {
     setLoading(true);
 
     try {
-      // Create the one-time message
-  const res = await axios.post(`${apiBaseUrl}/api/v1/create`, {
-        message,
-        password: password || undefined,
+      // 1. Encrypt the message on the client
+      const { encrypted, key, iv } = await encryptMessage(message);
+
+      // 2. Send only the encrypted data to the server
+      const res = await axios.post(`${apiBaseUrl}/api/v1/create`, {
+        encrypted_message: encrypted,
         expire_minutes: expireMinutes,
       });
 
-      // Dynamically generate link using publicHost
-      const generatedLink = `${publicHost}/read/${res.data.token}`;
-      console.log("Generated link for QR code:", generatedLink);
+      // 3. Create the shareable link with the decryption key in the URL fragment
+      const generatedLink = `${publicHost}/read/${res.data.token}#key=${key}&iv=${iv}`;
       setLink(generatedLink);
 
-      // Clear inputs
       setMessage("");
-      setPassword("");
       showToast(t("linkCreatedSuccessfully"), "success");
     } catch (err: any) {
       console.error("Error creating link:", err);
-      showToast(t("failedCreate"), "error");
-      setError(t("failedCreate"));
+      let errorMessage = t("failedCreate");
+      if (axios.isAxiosError(err) && err.response) {
+        if (err.response.status === 429) {
+          errorMessage = t("tooManyRequests"); // You'll need to add this to your translation files
+        } else {
+          errorMessage = `${t("failedCreate")} (Server responded with status: ${err.response.status})`;
+        }
+      }
+      showToast(errorMessage, "error");
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -80,17 +89,6 @@ const CreateForm: React.FC = () => {
           aria-label={t("enterMessage")}
         />
 
-        <label htmlFor="password" className="sr-only">{t("optionalPassword")}</label>
-        <input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder={t("optionalPassword")}
-          className="border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md p-3 focus:ring-cancomRed focus:border-cancomRed outline-none transition-colors duration-200"
-          aria-label={t("optionalPassword")}
-        />
-
         <label htmlFor="expireMinutes" className="sr-only">{t("expirationTime")}</label>
         <select
           id="expireMinutes"
@@ -121,31 +119,16 @@ const CreateForm: React.FC = () => {
               className="border border-green-300 dark:border-green-600 bg-green-50 dark:bg-green-800 text-green-900 dark:text-green-100 p-2 rounded-md w-full focus:outline-none focus:ring-1 focus:ring-green-500"
             />
             <button
-              onClick={() => {
-                if (navigator.clipboard) {
-                  navigator.clipboard.writeText(link);
-                } else {
-                  const textArea = document.createElement("textarea");
-                  textArea.value = link;
-                  document.body.appendChild(textArea);
-                  textArea.focus();
-                  textArea.select();
-                  try {
-                    document.execCommand("copy");
-                  } catch (err) {
-                    console.error("Fallback: Oops, unable to copy", err);
-                  }
-                  document.body.removeChild(textArea);
-                }
-              }}
+              type="button"
+              onClick={() => copy(link)}
               className="bg-gray-100 hover:bg-gray-200 text-gray-900 py-2 px-4 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-cancomRed focus:ring-offset-2 dark:focus:ring-offset-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 w-full sm:w-auto"
             >
-              {t("copy")}
+              {isCopied ? t("copied") : t("copy")}
             </button>
           </div>
 
           {/* QR Code */}
-          <div className="p-2 bg-white dark:bg-gray-900 rounded-md">
+          <div className="p-2 bg-white dark:bg-gray-900 rounded-md" role="img" aria-label={t('qrCodeForLink')}>
             <QRCode value={link} size={160} level="H" renderAs="svg" fgColor="#1a202c" bgColor="#ffffff" />
           </div>
         </div>

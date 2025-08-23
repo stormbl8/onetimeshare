@@ -10,8 +10,8 @@ import ToastContainer from "./components/ToastContainer";
 import i18n from "./i18n";
 
 // API base URL for backend calls
-export const apiBaseUrl =
-  import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:8000`;
+// The Nginx reverse proxy will handle routing API calls, so we can use a relative path.
+export const apiBaseUrl = "";
 
 // Dynamic host detection for generating QR codes / links
 export const publicHost =
