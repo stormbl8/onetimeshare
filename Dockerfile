@@ -10,9 +10,12 @@ RUN npm ci --legacy-peer-deps
 # Copy rest of frontend
 COPY frontend/ ./
 
-# Run the build via npm (resolves permission + line ending issues)
-RUN npm run build
+# 🔧 Fix CRLF and missing +x in node_modules/.bin
+RUN find ./node_modules/.bin/ -type f -exec sed -i 's/\r$//' {} + \
+ && find ./node_modules/.bin/ -type f -exec chmod +x {} +
 
+# Run build
+RUN ./node_modules/.bin/vite build
 
 # ---- Stage 2: Build Backend and Final Image ----
 # Use a Python image for the final application
