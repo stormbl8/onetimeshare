@@ -142,33 +142,32 @@ jobs:
       - name: Update CHANGELOG.md based on README features
         run: |
           set -e
-          # Only proceed if README.md was actually changed in the last commit.
-          if ! git diff-tree --no-commit-id --name-only -r HEAD | grep -q "README.md"; then
-            echo "README.md not changed in this commit. Skipping changelog update."
-            exit 0
-          fi
-
-          echo "README.md has changed. Checking for feature updates."
 
           # This function extracts content between '## Features' and the next '##' heading.
           extract_features() {
             awk '/^## Features/{f=1;next} /^##/{f=0} f' "$1"
           }
 
-          extract_features <(git show HEAD:README.md) > current_features.txt
-          extract_features <(git show HEAD^:README.md) > prev_features.txt
+          # Find the commit hash of the last change to CHANGELOG.md. Fallback to HEAD^ if not found.
+          PREV_COMMIT_SHA=$(git log -1 --pretty=format:%H -- CHANGELOG.md 2>/dev/null || git rev-parse HEAD^)
 
-          # Find the differences, keeping only lines that are new or changed.
+          # Extract features from current README and the one from the last changelog commit.
+          extract_features <(git show HEAD:README.md) > current_features.txt
+          # Use 2>/dev/null to prevent errors if README.md didn't exist in the previous commit.
+          extract_features <(git show $PREV_COMMIT_SHA:README.md 2>/dev/null) > prev_features.txt
+
+          # Find the differences, keeping only lines that are new.
           CHANGES=$(diff prev_features.txt current_features.txt | grep '^> ' | sed 's/> //')
 
           if [ -z "$CHANGES" ]; then
-            echo "No new or changed lines in the Features section. Skipping."
+            echo "No new features found in README.md since last changelog update. Skipping."
             exit 0
           fi
 
+          echo "New features found. Updating CHANGELOG.md."
           VERSION=$(grep '^backend_service=' .env | cut -d'=' -f2)
           DATE=$(date +%Y-%m-%d)
-          { echo "## [$VERSION] - $DATE"; echo; echo "### Added or Changed"; echo "$CHANGES"; echo; cat CHANGELOG.md; } > CHANGELOG.md.new
+          { echo "## [$VERSION] - $DATE"; echo; echo "### Added or Changed"; echo "$CHANGES"; echo; cat CHANGELOG.md 2>/dev/null; } > CHANGELOG.md.new
           mv CHANGELOG.md.new CHANGELOG.md
 
           git add CHANGELOG.md
