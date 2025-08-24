@@ -15,6 +15,9 @@ RUN find ./node_modules/.bin/ -type f -exec sed -i 's/\r$//' {} + \
  && find ./node_modules/.bin/ -type f -exec chmod +x {} +
 
 # Run build
+RUN ls -l ./node_modules/.bin/vite
+RUN which node
+RUN node -v
 RUN ./node_modules/.bin/vite build
 
 # ---- Stage 2: Build Backend and Final Image ----
