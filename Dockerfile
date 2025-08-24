@@ -7,19 +7,11 @@ WORKDIR /app
 COPY frontend/package*.json ./
 
 # Install clean deps
-RUN npm ci
-
-# Fix permissions + line endings
-RUN chmod +x node_modules/.bin/* || true \
- && chmod +x node_modules/vite/bin/vite.js || true \
- && sed -i 's/\r$//' node_modules/.bin/* node_modules/vite/bin/vite.js
+RUN npm cache clean --force
+RUN npm install
 
 # Copy rest of frontend
 COPY frontend/ ./
-
-#Debugging
-RUN ls -l node_modules/.bin/vite && head -n1 node_modules/vite/bin/vite.js
-
 
 # Build
 RUN npm run build

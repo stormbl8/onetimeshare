@@ -1,42 +1,24 @@
-# Local Environment Files
-# Never commit secrets or local environment configurations.
-.env
-.env.*
-!/.env-local.sh
+# Ignore Git files
+.git
+.gitignore
+.dockerignore
 
-# Dependencies
-/frontend/node_modules
-/backend/venv
-/backend/.venv
-/backend/env
+# Node / Frontend stuff
+frontend/node_modules
+frontend/dist
+frontend/.vite
+frontend/.cache
 
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
+# Python / Backend stuff
+backend/__pycache__/
+backend/*.pyc
+backend/.pytest_cache
 
-# Build artifacts
-/frontend/dist
-/frontend/.vite
-
-# IDEs and editors
-.vscode/
-.idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# OS-generated files
+# OS cruft
 .DS_Store
 Thumbs.db
 
-# Log files
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Test reports
-/coverage
+# IDEs / editors
+.vscode
+.idea
+*.swp
