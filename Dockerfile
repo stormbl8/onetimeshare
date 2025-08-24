@@ -1,30 +1,17 @@
 # ---- Stage 1: Build Frontend ----
-FROM node:20-alpine AS build-frontend
+FROM node:20 AS build-frontend
 
 WORKDIR /app/frontend
 
 # Install dependencies
 COPY frontend/package*.json ./
-RUN npm ci --legacy-peer-deps
+RUN npm install
 
 # Copy rest of frontend
 COPY frontend/ ./
 
-# 🔧 Fix CRLF and missing +x in node_modules/.bin
-RUN find ./node_modules/.bin/ -type f -exec sed -i 's/\r$//' {} + \
- && find ./node_modules/.bin/ -type f -exec chmod +x {} +
-
 # Run build
-RUN apk add --no-cache libc6-compat
-# Debugging commands
-RUN ls -l ./node_modules/.bin/vite
-RUN head -n 1 ./node_modules/.bin/vite
-
-# Explicitly set permissions for vite
-RUN chmod +x ./node_modules/.bin/vite
-
-# Run build
-RUN ./node_modules/.bin/vite build
+RUN npm run build
 
 # ---- Stage 2: Build Backend and Final Image ----
 # Use a Python image for the final application
