@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { apiBaseUrl } from "../App";
@@ -19,6 +19,7 @@ const ReadView: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [messageVisible, setMessageVisible] = useState(false);
   const { isCopied, copy } = useClipboard();
+  const fetchInitiated = useRef(false);
 
   useEffect(() => {
     const fetchMessage = async () => {
@@ -42,6 +43,7 @@ const ReadView: React.FC = () => {
         setMessage(decrypted);
         setShowConfirmation(true);
         setError(null);
+        setStatusCode(null);
       } catch (err: any) {
         if (err.response?.status === 404 || err.response?.status === 410) {
           setError(t("invalidOrExpiredLink"));
@@ -57,8 +59,11 @@ const ReadView: React.FC = () => {
       }
     };
 
-    fetchMessage();
-  }, [token]); // Removed 't' from dependency array
+    if (!fetchInitiated.current) {
+      fetchInitiated.current = true;
+      fetchMessage();
+    }
+  }, [token, t]);
 
   const handleRevealMessage = () => {
     setShowConfirmation(false);

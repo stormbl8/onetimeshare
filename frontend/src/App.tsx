@@ -9,18 +9,14 @@ import ReadView from "./components/ReadView";
 import ToastContainer from "./components/ToastContainer";
 import i18n from "./i18n";
 
-// API base URL for backend calls
-// The Nginx reverse proxy will handle routing API calls, so we can use a relative path.
-export const apiBaseUrl = "";
+// In development, the API URL is passed in as an environment variable from docker-compose-dev.yml
+// In production, API calls are relative to the same host, so the base URL is an empty string.
+export const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
 
-// Dynamic host detection for generating QR codes / links
-export const publicHost =
-  window.location.hostname === "localhost"
-    ? window.location.origin
-    : import.meta.env.VITE_PUBLIC_HOST || `http://${window.location.hostname}:8080`;
-
-console.log("Using API base URL:", apiBaseUrl);
-console.log("Using Public Host:", publicHost);
+// The VITE_PUBLIC_HOST env var provides an override for the public-facing URL.
+// If it's not set, we default to the browser's current origin, which is the
+// most reliable way to construct the shareable link.
+export const publicHost = import.meta.env.VITE_PUBLIC_HOST || window.location.origin;
 
 const App: React.FC = () => {
   return (

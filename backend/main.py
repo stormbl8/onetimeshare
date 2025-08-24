@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -7,11 +8,24 @@ from typing import Optional
 import uuid
 from datetime import timedelta
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 import redis
 import redis.exceptions
 import os
 
 app = FastAPI()
+
+# CORS Middleware for development
+# Allows the frontend dev server (e.g., on localhost:5173) to make requests to the backend.
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Custom key function for rate limiting that respects the X-Forwarded-For header
 def get_real_ip(request: Request) -> str:
@@ -57,9 +71,25 @@ def create_message(req: CreateMessageRequest, request: Request):
 @app.post("/api/v1/read/{token}")
 @limiter.limit("10/minute")  # Limit to 10 requests per minute per IP
 def read_message(token: str, request: Request):
-    stored_value = r.get(token)
+    # Atomically get and delete the key using GETDEL.
+    # This prevents race conditions where a message could be read multiple times.
+    stored_value = r.getdel(token)
     if not stored_value:
         raise HTTPException(status_code=404, detail="Message not found or already read")
 
-    r.delete(token)  # delete after reading
     return {"encrypted_message": stored_value}
+
+# --- Static Files Hosting (for production single-container setup) ---
+# This section should only be active when the 'static' directory exists,
+# which is true in the production Docker image but not in development.
+static_dir = "static"
+if os.path.isdir(static_dir):
+    app.mount("/assets", StaticFiles(directory=os.path.join(static_dir, "assets")), name="assets")
+
+    @app.exception_handler(404)
+    async def custom_404_handler(request: Request, exc: HTTPException):
+        """Catches 404 errors to serve the React app's index.html for client-side routing."""
+        if not request.url.path.startswith(('/api/', '/health', '/docs', '/openapi.json')):
+            return FileResponse(os.path.join(static_dir, 'index.html'), status_code=200)
+        else:
+            return JSONResponse(status_code=404, content={"detail": "Not Found"})

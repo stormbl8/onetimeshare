@@ -1,11 +1,16 @@
-// Helper to convert buffer to base64
+// A more robust way to convert a buffer to a Base64 string
 const bufferToBase64 = (buffer: ArrayBuffer): string => {
-  return btoa(String.fromCharCode(...new Uint8Array(buffer)));
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return window.btoa(binary);
 };
 
-// Helper to convert base64 to buffer
+// A more robust way to convert a Base64 string back to a buffer
 const base64ToBuffer = (base64: string): ArrayBuffer => {
-  const binaryString = atob(base64);
+  const binaryString = window.atob(base64);
   const len = binaryString.length;
   const bytes = new Uint8Array(len);
   for (let i = 0; i < len; i++) {

@@ -1,6 +1,8 @@
 name: CI
+
 permissions:
   contents: write
+  packages: write # Required to push to GitHub Container Registry
 
 on:
   push:
@@ -9,167 +11,133 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version_tag.outputs.version }}
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
       - name: Set up git credentials for pushing tags
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+
+      - name: Check for version change and create git tag
+        id: version_tag
+        run: |
+          set -e
+          if [ ! -f .env ]; then echo ".env file not found"; exit 1; fi
+          
+          CUR_VER=$(grep '^APP_VERSION=' .env | cut -d'=' -f2)
+          if [ -z "$CUR_VER" ]; then echo "APP_VERSION not found in .env"; exit 1; fi
+          
+          echo "version=$CUR_VER" >> $GITHUB_OUTPUT
+
+          # Only tag on push to master
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/master" ]]; then
+            git fetch --unshallow || git fetch --depth=2
+            PREV_VER=$(git show HEAD^:.env 2>/dev/null | grep '^APP_VERSION=' | cut -d'=' -f2 || echo "")
+            if [ "$CUR_VER" != "$PREV_VER" ]; then
+              TAG="v$CUR_VER"
+              if git ls-remote --tags origin | grep -q "refs/tags/$TAG$"; then
+                echo "Tag $TAG already exists. Skipping creation."
+              else
+                echo "Version changed: $PREV_VER -> $CUR_VER. Creating tag $TAG."
+                git tag $TAG && git push origin $TAG
+              fi
+            else
+              echo "No version change detected."
+            fi
+          else
+            echo "Skipping tag creation on PR."
+          fi
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
       - name: Install backend dependencies
-        run: |
-          cd backend
-          pip install -r requirements.txt
-      - name: Check for backend and frontend version changes and tag
-        id: service_version_tag
-        run: |
-          set -e
-          if [ ! -f .env ]; then echo ".env file not found"; exit 1; fi
-          # Backend version check
-          CUR_BACKEND_VER=$(grep '^backend_service=' .env | cut -d'=' -f2)
-          PREV_BACKEND_VER=$(git show HEAD^:.env 2>/dev/null | grep '^backend_service=' | cut -d'=' -f2 || echo "")
-          if [ "$CUR_BACKEND_VER" != "$PREV_BACKEND_VER" ]; then
-            TAG="backend-$CUR_BACKEND_VER"
-            if git ls-remote --tags origin | grep -q "refs/tags/$TAG$"; then
-              echo "Tag $TAG already exists. Skipping creation."
-            else
-              echo "Backend version changed: $PREV_BACKEND_VER -> $CUR_BACKEND_VER. Creating tag $TAG."
-              git tag $TAG && git push origin $TAG
-            fi
-          else
-            echo "No backend version change detected."
-          fi
-          # Frontend version check
-          CUR_FRONTEND_VER=$(grep '^frontend_service=' .env | cut -d'=' -f2)
-          PREV_FRONTEND_VER=$(git show HEAD^:.env 2>/dev/null | grep '^frontend_service=' | cut -d'=' -f2 || echo "")
-          if [ "$CUR_FRONTEND_VER" != "$PREV_FRONTEND_VER" ]; then
-            TAG="frontend-$CUR_FRONTEND_VER"
-            if git ls-remote --tags origin | grep -q "refs/tags/$TAG$"; then
-              echo "Tag $TAG already exists. Skipping creation."
-            else
-              echo "Frontend version changed: $PREV_FRONTEND_VER -> $CUR_FRONTEND_VER. Creating tag $TAG."
-              git tag $TAG && git push origin $TAG
-            fi
-          else
-            echo "No frontend version change detected."
-          fi
+        run: pip install -r backend/requirements.txt
       - name: Run backend tests
-        run: |
-          cd backend
-          pytest || echo "No tests found"
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-      - name: Install frontend dependencies
-        run: |
-          cd frontend
-          npm install
-      - name: Run frontend build
-        run: |
-          cd frontend
-          npm run build
-      - name: Install Docker Compose
-        run: |
-          sudo curl -L "https://github.com/docker/compose/releases/download/v2.24.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          docker-compose version
-      - name: Build Docker images
-        run: docker-compose -f docker-compose-dev.yml build
-      - name: Scan backend image for vulnerabilities
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'onetimeshare_backend:latest'
-          format: 'table'
-          exit-code: '1'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
-      - name: Scan frontend image for vulnerabilities
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'onetimeshare_frontend:latest'
-          format: 'table'
-          exit-code: '1'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
+        run: pytest backend/ || echo "No tests found in backend/"
+
       - name: Log in to GitHub Container Registry
-        run: echo ${{ secrets.CR_PAT }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Tag and Push backend image
-        run: |
-          BACKEND_SERVICE_VERSION=$(grep '^backend_service=' .env | cut -d'=' -f2)
-          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/onetimeshare-backend
-          # Tag with version and latest
-          docker tag onetimeshare_backend:latest ${IMAGE_ID}:${BACKEND_SERVICE_VERSION}
-          docker tag onetimeshare_backend:latest ${IMAGE_ID}:latest
-          # Push both tags
-          docker push ${IMAGE_ID}:${BACKEND_SERVICE_VERSION}
-          docker push ${IMAGE_ID}:latest
-      - name: Tag and Push frontend image
-        run: |
-          FRONTEND_SERVICE_VERSION=$(grep '^frontend_service=' .env | cut -d'=' -f2)
-          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/onetimeshare-frontend
-          # Tag with version and latest
-          docker tag onetimeshare_frontend:latest ${IMAGE_ID}:${FRONTEND_SERVICE_VERSION}
-          docker tag onetimeshare_frontend:latest ${IMAGE_ID}:latest
-          # Push both tags
-          docker push ${IMAGE_ID}:${FRONTEND_SERVICE_VERSION}
-          docker push ${IMAGE_ID}:latest
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/onetimeshare:${{ steps.version_tag.outputs.version }}
+            ghcr.io/${{ github.repository_owner }}/onetimeshare:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Scan image for vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'ghcr.io/${{ github.repository_owner }}/onetimeshare:latest'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
   update-changelog:
     runs-on: ubuntu-latest
-    needs: build # Ensures this job runs only after the build and tests succeed
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master' # Only run on pushes to the master branch
+    needs: build-and-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          # Fetch depth 2 is needed to compare HEAD with the previous commit (HEAD^)
-          fetch-depth: 2
+          fetch-depth: 0 # Fetch all history for git log
 
       - name: Configure git for pushing
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
 
       - name: Update CHANGELOG.md based on README features
         run: |
           set -e
-
-          # This function extracts content between '## Features' and the next '##' heading.
           extract_features() {
             awk '/^## Features/{f=1;next} /^##/{f=0} f' "$1"
           }
-
-          # Find the commit hash of the last change to CHANGELOG.md. Fallback to HEAD^ if not found.
           PREV_COMMIT_SHA=$(git log -1 --pretty=format:%H -- CHANGELOG.md 2>/dev/null || git rev-parse HEAD^)
-
-          # Extract features from current README and the one from the last changelog commit.
           extract_features <(git show HEAD:README.md) > current_features.txt
-          # Use 2>/dev/null to prevent errors if README.md didn't exist in the previous commit.
           extract_features <(git show $PREV_COMMIT_SHA:README.md 2>/dev/null) > prev_features.txt
-
-          # Find the differences, keeping only lines that are new.
           CHANGES=$(diff prev_features.txt current_features.txt | grep '^> ' | sed 's/> //')
-
           if [ -z "$CHANGES" ]; then
             echo "No new features found in README.md since last changelog update. Skipping."
             exit 0
           fi
-
           echo "New features found. Updating CHANGELOG.md."
-          VERSION=$(grep '^backend_service=' .env | cut -d'=' -f2)
+          VERSION=${{ needs.build-and-push.outputs.version }}
           DATE=$(date +%Y-%m-%d)
-          { echo "## [$VERSION] - $DATE"; echo; echo "### Added or Changed"; echo "$CHANGES"; echo; cat CHANGELOG.md 2>/dev/null; } > CHANGELOG.md.new
+          { echo "## [v$VERSION] - $DATE"; echo; echo "### Added or Changed"; echo "$CHANGES"; echo; cat CHANGELOG.md 2>/dev/null; } > CHANGELOG.md.new
           mv CHANGELOG.md.new CHANGELOG.md
-
           git add CHANGELOG.md
-          git commit -m "docs: Update CHANGELOG.md for version $VERSION [skip ci]"
-          git push
+          # Only commit and push if there are actual changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit to CHANGELOG.md."
+          else
+            git commit -m "docs: Update CHANGELOG.md for version v$VERSION [skip ci]"
+            git push
+          fi

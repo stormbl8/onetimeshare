@@ -1,39 +1,54 @@
 services:
   frontend:
-    image: onetimeshare_frontend:latest
-    build: ./frontend
+    # Use the official Node image for the development environment
+    image: node:20-alpine
+    # Command to install dependencies and start the Vite dev server with hot-reloading
+    command: sh -c "npm install && npm run dev"
     ports:
-      - "8080:80"
+      # Expose the Vite dev server port to the host
+      - "5173:5173"
+    working_dir: /app
+    volumes:
+      # Mount the frontend source code into the container for hot-reloading
+      - ./frontend:/app
     depends_on:
-      backend:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      - backend
+    environment:
+      # This tells the Vite dev server what the public-facing URL of the backend is.
+      # It's used for making API calls from the browser.
+      # You can set BACKEND_HOST in your .env file to 'localhost' or your custom domain.
+            # You can set BACKEND_HOST in your .env file to 'localhost' or your custom domain.
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL}
 
   backend:
-    image: onetimeshare_backend:latest
-    build: ./backend
+    # Use the official Python image for the development environment
+    image: python:3.11-slim
+    # Command to install dependencies and start FastAPI with hot-reloading
+    command: sh -c "pip install -r requirements.txt && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
     ports:
-      - "8000:8000" # Expose for local dev access to API docs
+      # Expose the backend port for direct API access and viewing docs
+      - "8000:8000"
+    working_dir: /app
+    volumes:
+      # Mount the backend source code into the container for hot-reloading
+      - ./backend:/app
     depends_on:
       redis:
         condition: service_healthy
     environment:
       - PYTHONUNBUFFERED=1
       - REDIS_HOST=redis
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   redis:
     image: redis:7-alpine
+    volumes:
+      - redis_data_dev:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: always
+
+volumes:
+  redis_data_dev:

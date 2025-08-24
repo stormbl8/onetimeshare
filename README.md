@@ -13,104 +13,69 @@ OneTimeShare is a secure, open-source web app for sharing sensitive messages via
 
 ## Tech Stack
 
-- **Frontend:** React, TypeScript, Tailwind CSS, Vite, i18next, react-toastify
+- **Frontend:** React, TypeScript, Tailwind CSS, Vite
 - **Backend:** FastAPI, Python, Redis
 - **Containerization:** Docker, Docker Compose
-- **Web server:** Nginx
+- **CI/CD:** GitHub Actions
 
-## Getting Started
+## Getting Started (Local Development)
+
+This setup uses Docker Compose to run the frontend and backend services with **hot-reloading**, which allows code changes to be reflected instantly without rebuilding images.
 
 ### Prerequisites
 
-- Docker & Docker Compose installed
+- Docker and Docker Compose v2 (included with Docker Desktop) must be installed.
+- A Git client.
 
-### Quick Start
-
-1. **Clone the repository:**
-   ```sh
-   git clone https://github.com/yourusername/onetimeshare.git
-   cd onetimeshare
-   ```
-
-2. **Build and run with Docker Compose:**
-   ```sh
-   docker-compose -f docker-compose-dev.yml up --build
-   ```
-
-3. **Access the app:**
-   - Frontend: [http://localhost:8080](http://localhost:8080)
-   - Backend API: [http://localhost:8000](http://localhost:8000)
-
-### Development
-
-#### Frontend
-
+### 1. Clone the Repository
 ```sh
-cd frontend
-npm install
-npm run dev
+git clone https://github.com/volkanoezdemir/onetimeshare.git
+cd onetimeshare
 ```
 
-#### Backend
-
+### 2. Create Local Environment File
+Copy the sample local environment file. This file defines the environment variables for local development.
 ```sh
-cd backend
-pip install -r requirements.txt
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+cp sample.env-local.sh .env-local.sh
 ```
+By default, this sets up the application to run on `localhost`. You can edit `.env-local.sh` if you need to change the domain or ports.
+
+### 3. Build and Run
+Run the development environment using the `docker-compose-dev.yml` file. This command sources your local environment variables, then builds and starts the containers.
+```sh
+source .env-local.sh && docker-compose -f docker-compose-dev.yml up --build
+```
+
+### 4. Access the Services
+- **Application Frontend:** [http://localhost:5173](http://localhost:5173)
+- **Backend API Docs (Swagger UI):** [http://localhost:8000/docs](http://localhost:8000/docs)
+
+## Deployment (CI/CD)
+
+This project uses a GitHub Actions workflow for continuous integration and deployment.
+
+- **Trigger**: A push to the `master` branch will automatically trigger the CI/CD pipeline.
+- **Process**: The pipeline, defined in `.github/workflows/ci.yml`, performs the following steps:
+    1.  Builds a production-ready, multi-stage Docker image using the root `Dockerfile`.
+    2.  Tags the image with the version number defined in the `.env` file.
+    3.  Pushes the tagged image to the GitHub Container Registry (ghcr.io).
+    4.  Updates the `CHANGELOG.md` file based on your `README.md`.
+
+You **do not** need to build or push Docker images manually. Simply push your code changes to the `master` branch.
 
 ## Configuration
 
-- **Frontend environment:** See [`frontend/.env`](frontend/.env)
-- **Backend environment:** See [`backend/.env`](backend/.env)
-
-## Folder Structure
-
-See below for a summary:
-
-```
-onetimeshare/
-  backend/
-    main.py
-    models.py
-    app_settings.py
-    requirements.txt
-    Dockerfile
-    .env
-  frontend/
-    src/
-      components/
-      contexts/
-      hooks/
-      locales/
-      utils/
-      App.tsx
-      main.tsx
-      i18n.ts
-    nginx.conf
-    .env
-    ...
-  docker-compose.yml
-  README.md
-  LICENSE
-```
-
-## License
-
-MIT License. See [`LICENSE`](LICENSE) for details.
-
-## Screenshots
-
-![OneTimeShare Screenshot](frontend/public/screenshot.png)
+- **Local Development**: Configuration is managed in the `.env-local.sh` file. This is sourced into your shell before running `docker-compose`.
+- **Deployment & Versioning**: The CI pipeline's versioning is controlled by the `APP_VERSION` variable in the root `.env` file. You must update this version number to release a new version of the Docker image.
 
 ## API Documentation
 
-The backend provides interactive API documentation via Swagger UI:<br>
+The backend provides interactive API documentation via Swagger UI. When running locally, it is available at:<br>
 [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ## Contributing
 
-Contributions are welcome! Please see [`CONTRIBUTING.md`](CONTRIBUTING.md) for guidelines on submitting issues and pull requests.
+Contributions are welcome! Please see `CONTRIBUTING.md` for guidelines on submitting issues and pull requests.
 
 ## Security
 
@@ -119,3 +84,7 @@ If you discover a security vulnerability, please report it responsibly by emaili
 ## Contact
 
 For questions, support, or feedback, open an issue or email [Ozfe-Digital](mailto:info@ozfe-digital.de).
+
+## License
+
+MIT License. See [`LICENSE`](LICENSE) for details.

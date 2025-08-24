@@ -1,33 +1,31 @@
+version: "3.9"
+
 services:
-  frontend:
-    image: ghcr.io/volkanoezdemir/onetimeshare-frontend:${frontend-service}
+  app:
+    # Build the image from the Dockerfile in the current directory
+    build:
+      context: .
+      args:
+        # Pass the public host from .env to the Docker build for Vite
+        - VITE_PUBLIC_HOST=${VITE_PUBLIC_HOST}
+    image: ghcr.io/volkanoezdemir/onetimeshare:${APP_VERSION:-latest}
     ports:
-      - "8080:80"
-    depends_on:
-      backend:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: always
-    environment: # VITE_PUBLIC_HOST is still needed to generate the correct shareable link
-      - VITE_PUBLIC_HOST=http://otp.ozfe-digital.de:8080
-  backend:
-    image: ghcr.io/volkanoezdemir/onetimeshare-backend:${backend-service}
+      # Expose the app on host port 8080, mapping to the container's port 8000 (FastAPI)
+      - "8080:8000"
     depends_on:
       redis:
         condition: service_healthy
-    environment:
-      - PYTHONUNBUFFERED=1
-      - REDIS_HOST=redis
     healthcheck:
+      # The health check now points to the backend health endpoint
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
     restart: always
+    environment:
+      # Pass environment variables to the container
+      - PYTHONUNBUFFERED=${PYTHONUNBUFFERED:-1}
+      - REDIS_HOST=${REDIS_HOST:-redis}
 
   redis:
     image: redis:7-alpine
