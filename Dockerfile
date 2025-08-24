@@ -9,7 +9,11 @@ COPY frontend/package*.json ./
 RUN npm install
 
 # Copy the rest of the frontend code
-COPY frontend/ ./
+COPY frontend/ ./ 
+
+# Fix potential line ending and permission issues
+RUN find ./node_modules/.bin/ -type f -exec sed -i 's/\r$//' {} + 
+RUN find ./node_modules/.bin/ -type f -exec chmod +x {} + 
 
 # Build the frontend for production. The output will be in /app/frontend/dist
 RUN npm run build
