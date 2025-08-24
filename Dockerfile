@@ -1,21 +1,23 @@
 # ---- Stage 1: Build Frontend ----
 FROM node:20 AS build-frontend
 
-WORKDIR /app/frontend
+WORKDIR /app
 
 # Install dependencies
-COPY frontend/package*.json ./
+COPY frontend/package*.json ./ 
 RUN npm install
 
 # Explicitly set permissions for esbuild binary
 RUN chmod +x ./node_modules/@esbuild/linux-x64/bin/esbuild
 
+# Copy rest of frontend
+COPY frontend/ ./
+
 # Run build
 RUN npm run build
 
-# ---- Stage 2: Build Backend and Final Image ----
-# Use a Python image for the final application
-FROM python:3.11-slim
+# ---- Stage 2: Build Backend ----
+FROM python:3.11-slim AS build-backend
 
 WORKDIR /app
 
@@ -26,12 +28,24 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the backend application code
 COPY backend/ ./
 
-# Copy the built frontend assets from the build-frontend stage.
-# The FastAPI server is configured to serve files from a 'static' directory.
-COPY --from=build-frontend /app/frontend/dist /app/static
+# ---- Stage 3: Final Image (Nginx + Backend) ----
+FROM nginx:alpine
 
-# Expose the port the application runs on
-EXPOSE 8000
+# Copy built frontend assets from build-frontend stage
+COPY --from=build-frontend /app/dist /usr/share/nginx/html
 
-# Command to run the Uvicorn server in production
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Copy backend application from build-backend stage
+COPY --from=build-backend /app /app/backend
+
+# Copy Nginx configuration
+COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copy entrypoint script and make it executable
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Expose port 80 for Nginx
+EXPOSE 80
+
+# Set the entrypoint to our custom script
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
