@@ -5,3 +5,4 @@ bcrypt
 slowapi
 python-multipart
 redis
+setuptools>=78.1.1
