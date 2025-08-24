@@ -16,7 +16,7 @@ RUN find ./node_modules/.bin/ -type f -exec sed -i 's/\r$//' {} +
 RUN find ./node_modules/.bin/ -type f -exec chmod +x {} + 
 
 # Build the frontend for production. The output will be in /app/frontend/dist
-RUN node ./node_modules/typescript/lib/tsc.js
+RUN npm run build
 
 # ---- Stage 2: Build Backend and Final Image ----
 # Use a Python image for the final application
