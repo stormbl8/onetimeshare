@@ -18,8 +18,10 @@ RUN find ./node_modules/.bin/ -type f -exec sed -i 's/\r$//' {} + \
 RUN apk add --no-cache libc6-compat
 # Debugging commands
 RUN ls -l ./node_modules/.bin/vite
-RUN file ./node_modules/.bin/vite
 RUN head -n 1 ./node_modules/.bin/vite
+
+# Explicitly set permissions for vite
+RUN chmod +x ./node_modules/.bin/vite
 
 # Run build
 RUN ./node_modules/.bin/vite build
