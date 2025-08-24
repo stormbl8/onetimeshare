@@ -10,6 +10,15 @@ RUN npm install
 # Copy rest of frontend
 COPY frontend/ ./
 
+# Debugging: Check permissions before explicit chmod
+RUN ls -l ./node_modules/.bin/vite
+
+# Explicitly set permissions for vite
+RUN chmod +x ./node_modules/.bin/vite
+
+# Debugging: Check permissions after explicit chmod
+RUN ls -l ./node_modules/.bin/vite
+
 # Run build
 RUN npm run build
 
