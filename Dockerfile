@@ -1,22 +1,18 @@
 # ---- Stage 1: Build Frontend ----
-# Use a Node.js image to build the static frontend assets
 FROM node:20-alpine AS build-frontend
 
 WORKDIR /app/frontend
 
-# Copy package files and install dependencies
+# Install dependencies
 COPY frontend/package*.json ./
-RUN npm install
+RUN npm ci --legacy-peer-deps
 
-# Copy the rest of the frontend code
-COPY frontend/ ./ 
+# Copy rest of frontend
+COPY frontend/ ./
 
-# Fix potential line ending and permission issues
-RUN find ./node_modules/.bin/ -type f -exec sed -i 's/\r$//' {} + 
-RUN find ./node_modules/.bin/ -type f -exec chmod +x {} + 
-
-# Build the frontend for production. The output will be in /app/frontend/dist
+# Run the build via npm (resolves permission + line ending issues)
 RUN npm run build
+
 
 # ---- Stage 2: Build Backend and Final Image ----
 # Use a Python image for the final application
