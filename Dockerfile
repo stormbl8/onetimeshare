@@ -7,17 +7,8 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm install
 
-# Copy rest of frontend
-COPY frontend/ ./
-
-# Debugging: Check permissions before explicit chmod
-RUN ls -l ./node_modules/.bin/vite
-
-# Explicitly set permissions for vite
-RUN chmod +x ./node_modules/.bin/vite
-
-# Debugging: Check permissions after explicit chmod
-RUN ls -l ./node_modules/.bin/vite
+# Explicitly set permissions for esbuild binary
+RUN chmod +x ./node_modules/@esbuild/linux-x64/bin/esbuild
 
 # Run build
 RUN npm run build
