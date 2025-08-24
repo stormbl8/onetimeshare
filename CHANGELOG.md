@@ -1,3 +1,9 @@
+## [v1.1.1] - 2025-08-24
+
+### Added or Changed
+- **Configurable max views:** Set a limit on how many times a link can be viewed before it's destroyed.
+- **Email confirmation for burn-on-read:** Optionally send an email to the sender when a message is viewed and destroyed.
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
