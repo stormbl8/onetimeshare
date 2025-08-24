@@ -3,23 +3,27 @@ FROM node:20 AS build-frontend
 
 WORKDIR /app
 
-# Install dependencies
-COPY frontend/package*.json ./ 
-RUN npm install
+# Copy package.json & lock first (for caching)
+COPY frontend/package*.json ./
 
-# Explicitly set permissions for all binaries in .bin and vite.js
-RUN chmod +x ./node_modules/.bin/* || true
-RUN chmod +x ./node_modules/vite/bin/vite.js || true
+# Install clean deps
+RUN npm ci
 
-# Debugging: Check permissions of vite
-RUN ls -l ./node_modules/.bin/vite
-RUN ls -l ./node_modules/vite/bin/vite.js
+# Fix permissions + line endings
+RUN chmod +x node_modules/.bin/* || true \
+ && chmod +x node_modules/vite/bin/vite.js || true \
+ && sed -i 's/\r$//' node_modules/.bin/* node_modules/vite/bin/vite.js
 
 # Copy rest of frontend
 COPY frontend/ ./
 
-# Run build
+#Debugging
+RUN ls -l node_modules/.bin/vite && head -n1 node_modules/vite/bin/vite.js
+
+
+# Build
 RUN npm run build
+
 
 # ---- Stage 2: Build Backend ----
 FROM python:3.11-slim AS build-backend
