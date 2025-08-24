@@ -16,6 +16,12 @@ RUN find ./node_modules/.bin/ -type f -exec sed -i 's/\r$//' {} + \
 
 # Run build
 RUN apk add --no-cache libc6-compat
+# Debugging commands
+RUN ls -l ./node_modules/.bin/vite
+RUN file ./node_modules/.bin/vite
+RUN head -n 1 ./node_modules/.bin/vite
+
+# Run build
 RUN ./node_modules/.bin/vite build
 
 # ---- Stage 2: Build Backend and Final Image ----
