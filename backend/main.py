@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 import redis
 import redis.exceptions
 import os
+import email_sender # Import the email sender
 
 app = FastAPI()
 
@@ -48,6 +49,8 @@ r = redis.Redis(host=redis_host, port=6379, db=0, decode_responses=True)
 class CreateMessageRequest(BaseModel):
     encrypted_message: str
     expire_minutes: Optional[int] = 60  # default TTL: 60 minutes
+    max_views: Optional[int] = 1 # default to 1 view
+    sender_email: Optional[str] = None # Optional email for burn-on-read confirmation
 
 @app.get("/health")
 def health_check():
@@ -62,22 +65,40 @@ def health_check():
 def create_message(req: CreateMessageRequest, request: Request):
     token = str(uuid.uuid4())
     
-    # Use Redis' built-in expiration feature (time in seconds)
-    # The server now only stores the encrypted blob, it has no knowledge of the content.
-    r.setex(token, timedelta(minutes=req.expire_minutes), req.encrypted_message)
+    message_data = {
+        "encrypted_message": req.encrypted_message,
+        "max_views": str(req.max_views),
+        "current_views": "0"
+    }
+    if req.sender_email:
+        message_data["sender_email"] = req.sender_email
+    
+    r.hset(token, mapping=message_data)
+    r.expire(token, timedelta(minutes=req.expire_minutes))
 
     return {"token": token}
 
 @app.post("/api/v1/read/{token}")
 @limiter.limit("10/minute")  # Limit to 10 requests per minute per IP
 def read_message(token: str, request: Request):
-    # Atomically get and delete the key using GETDEL.
-    # This prevents race conditions where a message could be read multiple times.
-    stored_value = r.getdel(token)
-    if not stored_value:
+    message_data = r.hgetall(token)
+    if not message_data:
         raise HTTPException(status_code=404, detail="Message not found or already read")
 
-    return {"encrypted_message": stored_value}
+    encrypted_message = message_data.get("encrypted_message")
+    max_views = int(message_data.get("max_views", 1))
+    current_views = int(message_data.get("current_views", 0))
+    sender_email = message_data.get("sender_email") # Retrieve sender_email
+
+    # Increment view count atomically
+    new_current_views = r.hincrby(token, "current_views", 1)
+
+    if new_current_views >= max_views:
+        r.delete(token) # Delete the message if view limit is reached
+        if sender_email: # Send confirmation email if sender_email is provided
+            email_sender.send_burn_confirmation_email(sender_email, token)
+
+    return {"encrypted_message": encrypted_message}
 
 # --- Static Files Hosting (for production single-container setup) ---
 # This section should only be active when the 'static' directory exists,

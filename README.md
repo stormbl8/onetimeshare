@@ -18,37 +18,74 @@ OneTimeShare is a secure, open-source web app for sharing sensitive messages via
 - **Containerization:** Docker, Docker Compose
 - **CI/CD:** GitHub Actions
 
-## Getting Started (Local Development)
+## Getting Started
 
-This setup uses Docker Compose to run the frontend and backend services with **hot-reloading**, which allows code changes to be reflected instantly without rebuilding images.
+### Local Development (Single Container Build)
 
-### Prerequisites
+This setup uses `docker-compose-dev.yml` to build and run a single Docker container that includes both the frontend (served by Nginx) and the backend (FastAPI).
+
+#### Prerequisites
 
 - Docker and Docker Compose v2 (included with Docker Desktop) must be installed.
 - A Git client.
 
-### 1. Clone the Repository
+#### 1. Clone the Repository
 ```sh
 git clone https://github.com/volkanoezdemir/onetimeshare.git
 cd onetimeshare
 ```
 
-### 2. Create Local Environment File
-Copy the sample local environment file. This file defines the environment variables for local development.
+#### 2. Create Local Environment File
+Copy the sample local environment file. This file defines environment variables for local development.
 ```sh
 cp sample.env-local.sh .env-local.sh
 ```
 By default, this sets up the application to run on `localhost`. You can edit `.env-local.sh` if you need to change the domain or ports.
 
-### 3. Build and Run
-Run the development environment using the `docker-compose-dev.yml` file. This command sources your local environment variables, then builds and starts the containers.
+#### 3. Build and Run Development Environment
+Run the development environment using the `docker-compose-dev.yml` file. This command sources your local environment variables, then builds and starts the single application container.
 ```sh
 source .env-local.sh && docker-compose -f docker-compose-dev.yml up --build
 ```
 
-### 4. Access the Services
-- **Application Frontend:** [http://localhost:5173](http://localhost:5173)
-- **Backend API Docs (Swagger UI):** [http://localhost:8000/docs](http://localhost:8000/docs)
+#### 4. Access Development Services
+- **Application Frontend:** [http://localhost:8080](http://localhost:8080)
+- **Backend API (proxied by Nginx):** [http://localhost:8080/api](http://localhost:8080/api)
+- **Backend API Docs (Swagger UI - proxied):** [http://localhost:8080/api/docs](http://localhost:8080/api/docs)
+
+To stop the services:
+```sh
+docker-compose -f docker-compose-dev.yml down
+```
+
+### Running the Production Image Locally
+
+To run the pre-built, production-ready Docker image (built and pushed by CI) locally:
+
+#### 1. Ensure Docker is Running
+Make sure Docker Desktop or your Docker daemon is active.
+
+#### 2. Create Environment File (if needed)
+If your application requires specific environment variables (e.g., `APP_VERSION`, `REDIS_HOST`), ensure they are set in your shell or in a `.env` file that `docker-compose` can pick up. For `APP_VERSION`, you can set it directly:
+```sh
+export APP_VERSION=latest # Or a specific version like v1.1.0
+```
+
+#### 3. Start the Services
+Use the main `docker-compose.yml` file to pull and run the image.
+```sh
+docker-compose up -d # -d for detached mode
+```
+
+#### 4. Access the Application
+- **Application Frontend:** [http://localhost:8080](http://localhost:8080)
+- **Backend API (proxied by Nginx):** [http://localhost:8080/api](http://localhost:8080/api)
+- **Backend API Docs (Swagger UI - proxied):** [http://localhost:8080/api/docs](http://localhost:8080/api/docs)
+
+To stop the services:
+```sh
+docker-compose down
+```
 
 ## Deployment (CI/CD)
 
@@ -56,7 +93,7 @@ This project uses a GitHub Actions workflow for continuous integration and deplo
 
 - **Trigger**: A push to the `master` branch will automatically trigger the CI/CD pipeline.
 - **Process**: The pipeline, defined in `.github/workflows/ci.yml`, performs the following steps:
-    1.  Builds a production-ready, multi-stage Docker image using the root `Dockerfile`.
+    1.  Builds a production-ready, single-container Docker image using the root `Dockerfile`.
     2.  Tags the image with the version number defined in the `.env` file.
     3.  Pushes the tagged image to the GitHub Container Registry (ghcr.io).
     4.  Updates the `CHANGELOG.md` file based on your `README.md`.
@@ -70,8 +107,8 @@ You **do not** need to build or push Docker images manually. Simply push your co
 
 ## API Documentation
 
-The backend provides interactive API documentation via Swagger UI. When running locally, it is available at:<br>
-[http://localhost:8000/docs](http://localhost:8000/docs)
+The backend provides interactive API documentation via Swagger UI. When running locally via the development setup, it is available at:<br>
+[http://localhost:8080/api/docs](http://localhost:8080/api/docs)
 
 ## Contributing
 

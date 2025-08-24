@@ -13,6 +13,8 @@ const CreateForm: React.FC = () => {
   const { t } = useTranslation();
   const [message, setMessage] = useState("");
   const [expireMinutes, setExpireMinutes] = useState(60);
+  const [maxViews, setMaxViews] = useState(1); // New state for max views
+  const [senderEmail, setSenderEmail] = useState(""); // New state for sender email
   const [link, setLink] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -32,10 +34,12 @@ const CreateForm: React.FC = () => {
       const res = await axios.post(`${apiBaseUrl}/api/v1/create`, {
         encrypted_message: encrypted,
         expire_minutes: expireMinutes,
+        max_views: maxViews,
+        sender_email: senderEmail, // Pass sender_email to the backend
       });
 
       // 3. Create the shareable link with the decryption key in the URL fragment
-      const generatedLink = `${publicHost}/read/${res.data.token}#key=${key}&iv=${iv}`;
+      const generatedLink = `${publicHost}/read/${res.data.token}#key=${encodeURIComponent(key)}&iv=${encodeURIComponent(iv)}`;
       setLink(generatedLink);
 
       setMessage("");
@@ -101,6 +105,31 @@ const CreateForm: React.FC = () => {
           <option value={60}>1 {t("hour")}</option>
           <option value={1440}>24 {t("hours")}</option>
         </select>
+
+        {/* New input for Max Views */}
+        <label htmlFor="maxViews" className="sr-only">{t("maxViews")}</label>
+        <input
+          type="number"
+          id="maxViews"
+          value={maxViews}
+          onChange={(e) => setMaxViews(parseInt(e.target.value))}
+          placeholder={t("maxViews")}
+          min="1"
+          className="border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md p-3 focus:ring-cancomRed focus:border-cancomRed outline-none transition-colors duration-200"
+          aria-label={t("maxViews")}
+        />
+
+        {/* New input for Sender Email */}
+        <label htmlFor="senderEmail" className="sr-only">{t("senderEmail")}</label>
+        <input
+          type="email"
+          id="senderEmail"
+          value={senderEmail}
+          onChange={(e) => setSenderEmail(e.target.value)}
+          placeholder={t("senderEmail")}
+          className="border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md p-3 focus:ring-cancomRed focus:border-cancomRed outline-none transition-colors duration-200"
+          aria-label={t("senderEmail")}
+        />
 
         <button type="submit" className="bg-gray-100 hover:bg-gray-200 text-gray-900 py-3 px-4 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-cancomRed focus:ring-offset-2 dark:focus:ring-offset-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100" aria-label={t("createLink")}>
           {t("createLink")}

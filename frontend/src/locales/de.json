@@ -17,5 +17,7 @@
   "messageExpired": "Nachricht abgelaufen.",
   "oneTimeMessageConfirmation": "Dies ist eine einmalige Nachricht. Möchten Sie sie enthüllen?",
   "revealMessage": "Nachricht enthüllen",
-  "loadingMessage": "Nachricht wird geladen..."
+  "loadingMessage": "Nachricht wird geladen...",
+  "maxViews": "Maximale Ansichten",
+  "senderEmail": "Ihre E-Mail (für Bestätigung)"
 }

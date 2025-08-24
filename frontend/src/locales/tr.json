@@ -17,5 +17,7 @@
   "messageExpired": "Mesajın süresi doldu.",
   "oneTimeMessageConfirmation": "Bu tek kullanımlık bir mesajdır. Ortaya çıkarmak ister misiniz?",
   "revealMessage": "Mesajı Ortaya Çıkar",
-  "loadingMessage": "Mesaj yükleniyor..."
+  "loadingMessage": "Mesaj yükleniyor...",
+  "maxViews": "Maksimum Görüntüleme",
+  "senderEmail": "E-postanız (onay için)"
 }

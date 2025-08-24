@@ -1,48 +1,33 @@
 services:
-  frontend:
-    # Use the official Node image for the development environment
-    image: node:20-alpine
-    # Command to install dependencies and start the Vite dev server with hot-reloading
-    command: sh -c "npm install && npm run dev"
+  onetimeshare:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=http://localhost:8080
     ports:
-      # Expose the Vite dev server port to the host
-      - "5173:5173"
-    working_dir: /app
-    volumes:
-      # Mount the frontend source code into the container for hot-reloading
-      - ./frontend:/app
-    depends_on:
-      - backend
-    environment:
-      # This tells the Vite dev server what the public-facing URL of the backend is.
-      # It's used for making API calls from the browser.
-      # You can set BACKEND_HOST in your .env file to 'localhost' or your custom domain.
-            # You can set BACKEND_HOST in your .env file to 'localhost' or your custom domain.
-      - VITE_API_BASE_URL=${VITE_API_BASE_URL}
-
-  backend:
-    # Use the official Python image for the development environment
-    image: python:3.11-slim
-    # Command to install dependencies and start FastAPI with hot-reloading
-    command: sh -c "pip install -r requirements.txt && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
-    ports:
-      # Expose the backend port for direct API access and viewing docs
-      - "8000:8000"
-    working_dir: /app
-    volumes:
-      # Mount the backend source code into the container for hot-reloading
-      - ./backend:/app
+      - "8080:80"
     depends_on:
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/usr/bin/curl", "-f", "http://localhost/", "&&", "/usr/bin/curl", "-f", "http://localhost:8000/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: always
     environment:
-      - PYTHONUNBUFFERED=1
-      - REDIS_HOST=redis
+      - PYTHONUNBUFFERED=${PYTHONUNBUFFERED:-1}
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - SMTP_SERVER=${SMTP_SERVER}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
 
   redis:
     image: redis:7-alpine
     volumes:
-      - redis_data_dev:/data
+      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -51,4 +36,4 @@ services:
     restart: always
 
 volumes:
-  redis_data_dev:
+  redis_data:

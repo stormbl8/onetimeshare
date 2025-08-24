@@ -17,5 +17,7 @@
   "messageExpired": "Message expired.",
   "oneTimeMessageConfirmation": "This is a one-time message. Do you want to reveal it?",
   "revealMessage": "Reveal Message",
-  "loadingMessage": "Loading message..."
+  "loadingMessage": "Loading message...",
+  "maxViews": "Maximum Views",
+  "senderEmail": "Your Email (for confirmation)"
 }

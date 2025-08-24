@@ -1,31 +1,32 @@
 version: "3.9"
 
 services:
-  app:
-    # Build the image from the Dockerfile in the current directory
-    build:
-      context: .
-      args:
-        # Pass the public host from .env to the Docker build for Vite
-        - VITE_PUBLIC_HOST=${VITE_PUBLIC_HOST}
+  onetimeshare:
+    # Directly use the pre-built image from the registry
     image: ghcr.io/volkanoezdemir/onetimeshare:${APP_VERSION:-latest}
     ports:
-      # Expose the app on host port 8080, mapping to the container's port 8000 (FastAPI)
-      - "8080:8000"
+      # Expose the onetimeshare on host port 8080, mapping to the container's port 80 (Nginx)
+      - "8080:80"
     depends_on:
       redis:
         condition: service_healthy
     healthcheck:
-      # The health check now points to the backend health endpoint
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      # Health check for Nginx serving the frontend (port 80) and Backend (port 8000)
+      test: ["CMD", "/usr/bin/curl", "-f", "http://localhost/", "&&", "/usr/bin/curl", "-f", "http://localhost:8000/docs"]
       interval: 30s
       timeout: 10s
       retries: 3
     restart: always
     environment:
-      # Pass environment variables to the container
       - PYTHONUNBUFFERED=${PYTHONUNBUFFERED:-1}
       - REDIS_HOST=${REDIS_HOST:-redis}
+      - SMTP_SERVER=${SMTP_SERVER}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      # In production, API calls are relative to the same host, so VITE_API_BASE_URL is not needed.
+      # If VITE_PUBLIC_HOST is needed by the frontend at runtime, uncomment and set it here:
+      # - VITE_PUBLIC_HOST=${VITE_PUBLIC_HOST}
 
   redis:
     image: redis:7-alpine
