@@ -7,8 +7,13 @@ WORKDIR /app
 COPY frontend/package*.json ./ 
 RUN npm install
 
-# Explicitly set permissions for esbuild binary
-RUN chmod +x ./node_modules/@esbuild/linux-x64/bin/esbuild
+# Explicitly set permissions for all binaries in .bin and vite.js
+RUN chmod +x ./node_modules/.bin/* || true
+RUN chmod +x ./node_modules/vite/bin/vite.js || true
+
+# Debugging: Check permissions of vite
+RUN ls -l ./node_modules/.bin/vite
+RUN ls -l ./node_modules/vite/bin/vite.js
 
 # Copy rest of frontend
 COPY frontend/ ./
