@@ -3,7 +3,7 @@
 # Local environment version tracking
 
 # Version numbers for services
-export APP_VERSION="1.1.1"
+export APP_VERSION="1.1.2"
 
 # Set your domain name here. This will be used by Nginx and the frontend for links.
 # Example: export DOMAIN_NAME="otp.ozfe-digital.de"
