@@ -16,7 +16,7 @@ WORKDIR /app
 ENV PYTHONPATH=/app
 
 # Install Nginx
-RUN apt-get update && apt-get install -y nginx curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y nginx curl gettext-base && rm -rf /var/lib/apt/lists/*
 
 # Install backend dependencies directly in the final stage
 COPY backend/requirements.txt ./
@@ -29,8 +29,8 @@ COPY --from=frontend-builder /app/dist /usr/share/nginx/html
 # Copy backend application directly into /app
 COPY backend/main.py backend/models.py backend/app_settings.py backend/email_sender.py ./
 
-# Copy Nginx configuration
-COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
+# Copy Nginx configuration template for dynamic domain substitution
+COPY frontend/default.conf.template /etc/nginx/conf.d/default.conf.template
 
 # Create a simple entrypoint script to start both Nginx and Uvicorn
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh

@@ -3,8 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        - VITE_API_BASE_URL=http://localhost:8080
     ports:
       - "8080:80"
     depends_on:
@@ -17,6 +15,7 @@ services:
       retries: 3
     restart: always
     environment:
+      - DOMAIN_NAME=${DOMAIN_NAME:-localhost}
       - PYTHONUNBUFFERED=${PYTHONUNBUFFERED:-1}
       - REDIS_HOST=${REDIS_HOST:-redis}
       - SMTP_SERVER=${SMTP_SERVER}
