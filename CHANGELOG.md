@@ -1,3 +1,25 @@
+## [v1.1.2] - 2025-08-25
+
+### Added or Changed
+
+- **End-to-end encrypted sharing**: Securely share secrets and files with one-time access links for maximum privacy.
+- **One-time access links**: Ensure secrets are only accessible once, then deleted for security.
+- **FastAPI backend**: Robust Python backend with health checks, encryption, and email notifications.
+- **React + Tailwind CSS frontend**: Modern, responsive UI with multi-language support (English, German, Turkish).
+- **Dockerized deployment**: Easy setup using Docker Compose; backend, frontend, Redis, and Nginx containers.
+- **Automated CI/CD**: GitHub Actions pipeline builds, tags, and pushes images; creates releases with incremental notes.
+- **Semantic versioning**: Version management via .env files, with automatic tagging and release note generation.
+- **Redis integration**: Fast, ephemeral storage for secrets and access events.
+- **Nginx reverse proxy**: Delivers frontend and handles routing securely.
+- **Email notifications**: Sends alerts when secrets are accessed.
+- **Health checks**: Implemented in Dockerfiles for backend and frontend services.
+- **Multi-language support**: English, German, Turkish translations included.
+- **Planned enhancements:**
+    - Mobile-friendly UI for improved accessibility
+    - Custom branding and preview links for shared secrets
+    - OAuth login for secure authentication
+    - Expanded API documentation for developers
+
 ## [v1.1.1] - 2025-08-24
 
 ### Added or Changed
